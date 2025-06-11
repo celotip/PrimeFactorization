@@ -140,114 +140,110 @@ def main():
     print(f"Initial labeling time: {elapsed_time:.2f} ms")
     print(f"Memory Used During Labeling: {final_memory - initial_memory} KB")
     
-    # Create new element to insert
-    new_element = Element("dataset")
-    new_element.set("subject", "astronomy")
-    new_element.set("xmlns:xlink", "http://www.w3.org/XML/XLink/0.9")
-    
-    title = Element("title")
-    title.text = "Proper Motions of Stars in the Zone Catalogue -40 to -52 degrees of 20843 Stars for 1900"
-    new_element.append(title)
-    
-    altname1 = Element("altname")
-    altname1.set("type", "ADC")
-    altname1.text = "1005"
-    new_element.append(altname1)
-    
-    altname2 = Element("altname")
-    altname2.set("type", "CDS")
-    altname2.text = "I/5"
-    new_element.append(altname2)
-    
-    altname3 = Element("altname")
-    altname3.set("type", "brief")
-    altname3.text = "Proper Motions in Cape Zone Catalogue -40/-52"
-    new_element.append(altname3)
-    
-    reference = Element("reference")
-    source = Element("source")
-    other = Element("other")
-    
-    other_title = Element("title")
-    other_title.text = "Proper Motions of Stars in the Zone Catalogue"
-    other.append(other_title)
-    
-    author1 = Element("author")
-    initial1 = Element("initial")
-    initial1.text = "J"
-    lastName1 = Element("lastName")
-    lastName1.text = "Spencer"
-    author1.append(initial1)
-    author1.append(lastName1)
-    other.append(author1)
-    
-    author2 = Element("author")
-    initial2 = Element("initial")
-    initial2.text = "J"
-    lastName2 = Element("lastName")
-    lastName2.text = "Jackson"
-    author2.append(initial2)
-    author2.append(lastName2)
-    other.append(author2)
-    
-    name = Element("name")
-    name.text = "His Majesty's Stationery Office, London"
-    other.append(name)
-    
-    publisher = Element("publisher")
-    publisher.text = "???"
-    other.append(publisher)
-    
-    city = Element("city")
-    city.text = "???"
-    other.append(city)
-    
-    date = Element("date")
-    year = Element("year")
-    year.text = "1936"
-    date.append(year)
-    other.append(date)
-    
-    source.append(other)
-    reference.append(source)
-    new_element.append(reference)
-    
-    keywords = Element("keywords")
-    keywords.set("parentListURL", "http://messier.gsfc.nasa.gov/xml/keywordlists/adc_keywords.html")
-    
-    keyword1 = Element("keyword")
-    keyword1.set("xlink:href", "Positional_data.html")
-    keyword1.text = "Positional data"
-    keywords.append(keyword1)
-    
-    keyword2 = Element("keyword")
-    keyword2.set("xlink:href", "Proper_motions.html")
-    keyword2.text = "Proper motions"
-    keywords.append(keyword2)
-    
-    new_element.append(keywords)
-    
-    descriptions = Element("descriptions")
-    description = Element("description")
-    para = Element("para")
-    para.text = "This catalog, listing the proper motions of 20,843 stars from the Cape Astrographic Zones..."
-    description.append(para)
-    descriptions.append(description)
-    descriptions.append(Element("details"))
-    new_element.append(descriptions)
-    
-    identifier = Element("identifier")
-    identifier.text = "I_5.xml"
-    new_element.append(identifier)
-    
-    # Create new node and insert it
-    new_node = XmlNode("dataset", new_element)
-    relab.InsertNode(root_node, new_node)
+    # Create the Entry element with attributes
+    entry = Element("Entry", {
+        "id": "200K_HUMAN",
+        "class": "STANDARD",
+        "mtype": "PRT",
+        "seqlen": "1200"
+    })
+
+    # Add simple children
+    entry.append(Element("AC"))
+    entry[-1].text = "P99999"
+
+    # Add Mod elements
+    mod1 = Element("Mod", {"date": "10-JAN-2024", "Rel": "55", "type": "Created"})
+    mod2 = Element("Mod", {"date": "10-JAN-2024", "Rel": "55", "type": "Last sequence update"})
+    mod3 = Element("Mod", {"date": "20-FEB-2024", "Rel": "56", "type": "Last annotation update"})
+    entry.extend([mod1, mod2, mod3])
+
+    # Add descriptive elements
+    descr = Element("Descr")
+    descr.text = "200 KDA SIGNALING RECEPTOR PROTEIN"
+    species = Element("Species")
+    species.text = "Homo sapiens (Human)"
+    entry.extend([descr, species])
+
+    # Organism lineage
+    orgs = [
+        "Eukaryota", "Metazoa", "Chordata", "Craniata",
+        "Vertebrata", "Mammalia", "Primates", "Hominidae", "Homo"
+    ]
+    for org in orgs:
+        el = Element("Org")
+        el.text = org
+        entry.append(el)
+
+    # Reference 1
+    ref1 = Element("Ref", {"num": "1", "pos": "SEQUENCE FROM N.A"})
+    ref1.append(Element("Comment", text := "STRAIN=REFERENCE"))
+    ref1.append(Element("DB", text := "PUBMED"))
+    ref1.append(Element("MedlineID", text := "98765432"))
+    for author in ["Smith J.", "Doe A.", "Brown T."]:
+        a = Element("Author")
+        a.text = author
+        ref1.append(a)
+    cite1 = Element("Cite")
+    cite1.text = "J. Biol. Chem. 299:1234-1245(2024)"
+    ref1.append(cite1)
+    entry.append(ref1)
+
+    # Reference 2
+    ref2 = Element("Ref", {"num": "2", "pos": "ERRATUM"})
+    a = Element("Author")
+    a.text = "Smith J."
+    ref2.append(a)
+    cite2 = Element("Cite")
+    cite2.text = "J. Biol. Chem. 300:2345-2346(2024)"
+    ref2.append(cite2)
+    entry.append(ref2)
+
+    # Database cross-references
+    entry.append(Element("EMBL", {"prim_id": "X12345", "sec_id": "CAA12345"}))
+    entry.append(Element("INTERPRO", {"prim_id": "IPR001234", "sec_id": "-"}))
+    entry.append(Element("INTERPRO", {"prim_id": "IPR005678", "sec_id": "-"}))
+    entry.append(Element("PFAM", {"prim_id": "PF00123", "sec_id": "SIGNAL", "status": "1"}))
+    entry.append(Element("PFAM", {"prim_id": "PF00456", "sec_id": "DOMAIN", "status": "1"}))
+
+    # Keywords
+    for kw in ["Signaling", "Receptor", "Transmembrane"]:
+        keyword = Element("Keyword")
+        keyword.text = kw
+        entry.append(keyword)
+
+    # Features section
+    features = Element("Features")
+
+    domain1 = Element("DOMAIN", {"from": "60", "to": "120"})
+    d1_descr = Element("Descr")
+    d1_descr.text = "TRANSMEMBRANE DOMAIN"
+    domain1.append(d1_descr)
+
+    domain2 = Element("DOMAIN", {"from": "300", "to": "450"})
+    d2_descr = Element("Descr")
+    d2_descr.text = "SIGNAL TRANSDUCTION DOMAIN"
+    domain2.append(d2_descr)
+
+    domain3 = Element("DOMAIN", {"from": "700", "to": "900"})
+    d3_descr = Element("Descr")
+    d3_descr.text = "ATP BINDING DOMAIN"
+    domain3.append(d3_descr)
+
+    binding = Element("BINDING", {"from": "850", "to": "860"})
+    binding_descr = Element("Descr")
+    binding_descr.text = "GTP BINDING SITE"
+    binding.append(binding_descr)
+
+    features.extend([domain1, domain2, domain3, binding])
+    entry.append(features)
+    new_node = XmlLabeler.BuildTree(entry)
     
     # Relabel the tree
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
     
+    relab.InsertNode(root_node, new_node)
     relab.LabelTree(root_node)
     
     final_memory = XmlLabeler.GetMemoryUsage()

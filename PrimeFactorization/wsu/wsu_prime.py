@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import Element
 import time
 import os
 import psutil
@@ -57,16 +58,26 @@ class XmlLabeler:
         return process.memory_info().rss // 1024  # KB
     
 class PrimeLabeler:
-    def label_tree(self, element, pLabel, d):
+    def label_tree(self, element, pLabel):
     # element.set("label", str(pLabel)) 
         element.Label = pLabel.copy()  
         for j in range(1, len(element.Children)+1):
             pout = pLabel.copy()
             pout.append(j)
-            self.label_tree(element.Children[j-1], pout, d + 1)
+            self.label_tree(element.Children[j-1], pout)
         
     def InsertNode(self, parent, newNode):
         parent.AddChild(newNode)
+    
+    def InsertLabeledNode(self, parent, newNode):
+        parent.AddChild(newNode)
+        newNode.Label = parent.Label.copy()
+        newNode.Label.append(len(parent.Children))
+        pLabel = newNode.Label
+        for j in range(1, len(newNode.Children)+1):
+            pout = pLabel.copy()
+            pout.append(j)
+            self.label_tree(newNode.Children[j-1], pout)
 
 def main():
     input_file_path = "wsu.xml"
@@ -82,7 +93,7 @@ def main():
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
 
-    prime_labeler.label_tree(root_node, [], 0)
+    prime_labeler.label_tree(root_node, [])
 
     final_memory = XmlLabeler.GetMemoryUsage()
     elapsed_time = (time.time() - start_time) * 1000  # ms
@@ -90,87 +101,73 @@ def main():
     print(f"Initial labeling time: {elapsed_time:.2f} ms")
     print(f"Memory Used During Labeling: {final_memory - initial_memory} KB")
 
-    # Create new element to insert
-    new_element = ET.Element("dataset")
-    new_element.set("subject", "astronomy")
-    new_element.set("xmlns:xlink", "http://www.w3.org/XML/XLink/0.9")
-    
-    title = ET.SubElement(new_element, "title")
-    title.text = "Proper Motions of Stars in the Zone Catalogue -40 to -52 degrees of 20843 Stars for 1900"
-    
-    altname1 = ET.SubElement(new_element, "altname")
-    altname1.set("type", "ADC")
-    altname1.text = "1005"
-    
-    altname2 = ET.SubElement(new_element, "altname")
-    altname2.set("type", "CDS")
-    altname2.text = "I/5"
-    
-    altname3 = ET.SubElement(new_element, "altname")
-    altname3.set("type", "brief")
-    altname3.text = "Proper Motions in Cape Zone Catalogue -40/-52"
-    
-    reference = ET.SubElement(new_element, "reference")
-    source = ET.SubElement(reference, "source")
-    other = ET.SubElement(source, "other")
-    
-    other_title = ET.SubElement(other, "title")
-    other_title.text = "Proper Motions of Stars in the Zone Catalogue"
-    
-    author1 = ET.SubElement(other, "author")
-    initial1 = ET.SubElement(author1, "initial")
-    initial1.text = "J"
-    lastName1 = ET.SubElement(author1, "lastName")
-    lastName1.text = "Spencer"
-    
-    author2 = ET.SubElement(other, "author")
-    initial2 = ET.SubElement(author2, "initial")
-    initial2.text = "J"
-    lastName2 = ET.SubElement(author2, "lastName")
-    lastName2.text = "Jackson"
-    
-    name = ET.SubElement(other, "name")
-    name.text = "His Majesty's Stationery Office, London"
-    
-    publisher = ET.SubElement(other, "publisher")
-    publisher.text = "???"
-    
-    city = ET.SubElement(other, "city")
-    city.text = "???"
-    
-    date = ET.SubElement(other, "date")
-    year = ET.SubElement(date, "year")
-    year.text = "1936"
-    
-    keywords = ET.SubElement(new_element, "keywords")
-    keywords.set("parentListURL", "http://messier.gsfc.nasa.gov/xml/keywordlists/adc_keywords.html")
-    
-    keyword1 = ET.SubElement(keywords, "keyword")
-    keyword1.set("xlink:href", "Positional_data.html")
-    keyword1.text = "Positional data"
-    
-    keyword2 = ET.SubElement(keywords, "keyword")
-    keyword2.set("xlink:href", "Proper_motions.html")
-    keyword2.text = "Proper motions"
-    
-    descriptions = ET.SubElement(new_element, "descriptions")
-    description = ET.SubElement(descriptions, "description")
-    para = ET.SubElement(description, "para")
-    para.text = "This catalog, listing the proper motions of 20,843 stars from the Cape Astrographic Zones..."
-    ET.SubElement(descriptions, "details")
-    
-    identifier = ET.SubElement(new_element, "identifier")
-    identifier.text = "I_5.xml"
+    # Create the XML structure
+    new_element = Element("newCourse")
+
+    new_element.append(Element("footnote"))
+    new_element[-1].text = "NEW"
+
+    new_element.append(Element("sln"))
+    new_element[-1].text = "99999"
+
+    new_element.append(Element("prefix"))
+    new_element[-1].text = "CS"
+
+    new_element.append(Element("crs"))
+    new_element[-1].text = "505"
+
+    new_element.append(Element("lab"))  # empty element
+
+    new_element.append(Element("sect"))
+    new_element[-1].text = "01"
+
+    new_element.append(Element("title"))
+    new_element[-1].text = "ADV ALGORITHMS"
+
+    new_element.append(Element("credit"))
+    new_element[-1].text = "4.0"
+
+    new_element.append(Element("days"))
+    new_element[-1].text = "M,W"
+
+    # Nested times
+    times = Element("times")
+    start = Element("start")
+    start.text = "14:00"
+    end = Element("end")
+    end.text = "15:30"
+    times.append(start)
+    times.append(end)
+    new_element.append(times)
+
+    # Nested place
+    place = Element("place")
+    bldg = Element("bldg")
+    bldg.text = "ENGR"
+    room = Element("room")
+    room.text = "101"
+    place.append(bldg)
+    place.append(room)
+    new_element.append(place)
+
+    new_element.append(Element("instructor"))
+    new_element[-1].text = "DR. SMITH"
+
+    new_element.append(Element("limit"))
+    new_element[-1].text = "60"
+
+    new_element.append(Element("enrolled"))
+    new_element[-1].text = "0"
     
     # Insert the new node
-    new_node = XmlNode("dataset", new_element)
-    prime_labeler.InsertNode(root_node, new_node)
+    new_node = XmlLabeler.BuildTree(new_element)
+    
 
     # Relabel the tree after insertion
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
 
-    prime_labeler.label_tree(root_node, [], 0)
+    prime_labeler.InsertLabeledNode(root_node, new_node)
 
     final_memory = XmlLabeler.GetMemoryUsage()
     elapsed_time = (time.time() - start_time) * 1000  # ms
@@ -178,8 +175,8 @@ def main():
     print(f"Time taken to label after insertion: {elapsed_time:.2f} ms")
     print(f"Memory Used During Relabeling After Insertion: {final_memory - initial_memory} KB")
 
-    # Write the XML file
-    tree.write(output_file_path, encoding='utf-8', xml_declaration=True)
+    # Export the labeled XML
+    XmlLabeler.ExportLabeledXml(root_node, output_file_path)
     print(f"Labeled XML has been saved to {output_file_path}")
 
 if __name__ == "__main__":

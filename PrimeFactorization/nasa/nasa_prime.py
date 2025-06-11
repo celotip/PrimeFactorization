@@ -57,15 +57,25 @@ class XmlLabeler:
         return process.memory_info().rss // 1024  # KB
     
 class PrimeLabeler:
-    def label_tree(self, element, pLabel, d):
+    def label_tree(self, element, pLabel):
         element.Label = pLabel.copy()  
         for j in range(1, len(element.Children)+1):
             pout = pLabel.copy()
             pout.append(j)
-            self.label_tree(element.Children[j-1], pout, d + 1)
+            self.label_tree(element.Children[j-1], pout)
         
     def InsertNode(self, parent, newNode):
         parent.AddChild(newNode)
+
+    def InsertLabeledNode(self, parent, newNode):
+        parent.AddChild(newNode)
+        newNode.Label = parent.Label.copy()
+        newNode.Label.append(len(parent.Children))
+        pLabel = newNode.Label
+        for j in range(1, len(newNode.Children)+1):
+            pout = pLabel.copy()
+            pout.append(j)
+            self.label_tree(newNode.Children[j-1], pout)
 
 def main():
     input_file_path = "nasa.xml"
@@ -81,7 +91,7 @@ def main():
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
 
-    prime_labeler.label_tree(root_node, [], 0)
+    prime_labeler.label_tree(root_node, [])
 
     final_memory = XmlLabeler.GetMemoryUsage()
     elapsed_time = (time.time() - start_time) * 1000  # ms
@@ -163,14 +173,14 @@ def main():
     
     # Insert the new node
     # Create new node and insert it
-    new_node = XmlNode("dataset", new_element)
-    prime_labeler.InsertNode(root_node, new_node)
+    new_node = XmlLabeler.BuildTree(new_element)
+    
 
     # Relabel the tree after insertion
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
 
-    prime_labeler.label_tree(root_node, [], 0)
+    prime_labeler.InsertLabeledNode(root_node, new_node)
 
     final_memory = XmlLabeler.GetMemoryUsage()
     elapsed_time = (time.time() - start_time) * 1000  # ms

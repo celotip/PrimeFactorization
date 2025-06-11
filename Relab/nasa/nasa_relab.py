@@ -120,6 +120,7 @@ class XmlLabeler:
 def main():
     input_path = "nasa.xml"
     output_path = "labeled_nasa.xml"
+    output_path2 = "pre_inserted_nasa.xml"
     
     tree = ET.parse(input_path)
     root_element = tree.getroot()
@@ -138,6 +139,11 @@ def main():
     
     print(f"Initial labeling time: {elapsed_time:.2f} ms")
     print(f"Memory Used During Labeling: {final_memory - initial_memory} KB")
+
+    # Export the labeled XML
+    XmlLabeler.ExportLabeledXml(root_node, output_path2)
+    # tree.write(output_path, encoding='utf-8', xml_declaration=True)
+    print(f"Labeled XML has been saved to {output_path2}")
     
     # Create new element to insert
     new_element = Element("dataset")
@@ -241,12 +247,13 @@ def main():
     
     # Create new node and insert it
     new_node = XmlNode("dataset", new_element)
-    relab.InsertNode(root_node, new_node)
+    
     
     # Relabel the tree
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
     
+    relab.InsertNode(root_node, new_node)
     relab.LabelTree(root_node)
     
     final_memory = XmlLabeler.GetMemoryUsage()

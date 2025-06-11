@@ -120,6 +120,7 @@ class XmlLabeler:
 def main():
     input_path = "wsu.xml"
     output_path = "labeled_wsu.xml"
+    output_path2 = "pre_inserted_wsu.xml"
     
     tree = ET.parse(input_path)
     root_element = tree.getroot()
@@ -139,114 +140,78 @@ def main():
     print(f"Initial labeling time: {elapsed_time:.2f} ms")
     print(f"Memory Used During Labeling: {final_memory - initial_memory} KB")
     
-    # Create new element to insert
-    new_element = Element("dataset")
-    new_element.set("subject", "astronomy")
-    new_element.set("xmlns:xlink", "http://www.w3.org/XML/XLink/0.9")
-    
-    title = Element("title")
-    title.text = "Proper Motions of Stars in the Zone Catalogue -40 to -52 degrees of 20843 Stars for 1900"
-    new_element.append(title)
-    
-    altname1 = Element("altname")
-    altname1.set("type", "ADC")
-    altname1.text = "1005"
-    new_element.append(altname1)
-    
-    altname2 = Element("altname")
-    altname2.set("type", "CDS")
-    altname2.text = "I/5"
-    new_element.append(altname2)
-    
-    altname3 = Element("altname")
-    altname3.set("type", "brief")
-    altname3.text = "Proper Motions in Cape Zone Catalogue -40/-52"
-    new_element.append(altname3)
-    
-    reference = Element("reference")
-    source = Element("source")
-    other = Element("other")
-    
-    other_title = Element("title")
-    other_title.text = "Proper Motions of Stars in the Zone Catalogue"
-    other.append(other_title)
-    
-    author1 = Element("author")
-    initial1 = Element("initial")
-    initial1.text = "J"
-    lastName1 = Element("lastName")
-    lastName1.text = "Spencer"
-    author1.append(initial1)
-    author1.append(lastName1)
-    other.append(author1)
-    
-    author2 = Element("author")
-    initial2 = Element("initial")
-    initial2.text = "J"
-    lastName2 = Element("lastName")
-    lastName2.text = "Jackson"
-    author2.append(initial2)
-    author2.append(lastName2)
-    other.append(author2)
-    
-    name = Element("name")
-    name.text = "His Majesty's Stationery Office, London"
-    other.append(name)
-    
-    publisher = Element("publisher")
-    publisher.text = "???"
-    other.append(publisher)
-    
-    city = Element("city")
-    city.text = "???"
-    other.append(city)
-    
-    date = Element("date")
-    year = Element("year")
-    year.text = "1936"
-    date.append(year)
-    other.append(date)
-    
-    source.append(other)
-    reference.append(source)
-    new_element.append(reference)
-    
-    keywords = Element("keywords")
-    keywords.set("parentListURL", "http://messier.gsfc.nasa.gov/xml/keywordlists/adc_keywords.html")
-    
-    keyword1 = Element("keyword")
-    keyword1.set("xlink:href", "Positional_data.html")
-    keyword1.text = "Positional data"
-    keywords.append(keyword1)
-    
-    keyword2 = Element("keyword")
-    keyword2.set("xlink:href", "Proper_motions.html")
-    keyword2.text = "Proper motions"
-    keywords.append(keyword2)
-    
-    new_element.append(keywords)
-    
-    descriptions = Element("descriptions")
-    description = Element("description")
-    para = Element("para")
-    para.text = "This catalog, listing the proper motions of 20,843 stars from the Cape Astrographic Zones..."
-    description.append(para)
-    descriptions.append(description)
-    descriptions.append(Element("details"))
-    new_element.append(descriptions)
-    
-    identifier = Element("identifier")
-    identifier.text = "I_5.xml"
-    new_element.append(identifier)
+    # Export the labeled XML
+    XmlLabeler.ExportLabeledXml(root_node, output_path2)
+    # tree.write(output_path, encoding='utf-8', xml_declaration=True)
+    print(f"Labeled XML has been saved to {output_path2}")
+
+    # Create the XML structure
+    new_element = Element("newCourse")
+
+    new_element.append(Element("footnote"))
+    new_element[-1].text = "NEW"
+
+    new_element.append(Element("sln"))
+    new_element[-1].text = "99999"
+
+    new_element.append(Element("prefix"))
+    new_element[-1].text = "CS"
+
+    new_element.append(Element("crs"))
+    new_element[-1].text = "505"
+
+    new_element.append(Element("lab"))  # empty element
+
+    new_element.append(Element("sect"))
+    new_element[-1].text = "01"
+
+    new_element.append(Element("title"))
+    new_element[-1].text = "ADV ALGORITHMS"
+
+    new_element.append(Element("credit"))
+    new_element[-1].text = "4.0"
+
+    new_element.append(Element("days"))
+    new_element[-1].text = "M,W"
+
+    # Nested times
+    times = Element("times")
+    start = Element("start")
+    start.text = "14:00"
+    end = Element("end")
+    end.text = "15:30"
+    times.append(start)
+    times.append(end)
+    new_element.append(times)
+
+    # Nested place
+    place = Element("place")
+    bldg = Element("bldg")
+    bldg.text = "ENGR"
+    room = Element("room")
+    room.text = "101"
+    place.append(bldg)
+    place.append(room)
+    new_element.append(place)
+
+    new_element.append(Element("instructor"))
+    new_element[-1].text = "DR. SMITH"
+
+    new_element.append(Element("limit"))
+    new_element[-1].text = "60"
+
+    new_element.append(Element("enrolled"))
+    new_element[-1].text = "0"
     
     # Create new node and insert it
-    new_node = XmlNode("dataset", new_element)
-    relab.InsertNode(root_node, new_node)
+    new_node = XmlLabeler.BuildTree(new_element)
+    
     
     # Relabel the tree
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
     
+    relab.InsertNode(root_node, new_node)
     relab.LabelTree(root_node)
     
     final_memory = XmlLabeler.GetMemoryUsage()
@@ -256,8 +221,8 @@ def main():
     print(f"Memory Used During Relabeling After Insertion: {final_memory - initial_memory} KB")
     
     # Export the labeled XML
-    # XmlLabeler.ExportLabeledXml(root_node, output_path)        tree.write(output_path, encoding='utf-8', xml_declaration=True)
-    tree.write(output_path, encoding='utf-8', xml_declaration=True)
+    XmlLabeler.ExportLabeledXml(root_node, output_path)
+    # tree.write(output_path, encoding='utf-8', xml_declaration=True)
     print(f"Labeled XML has been saved to {output_path}")
 
 if __name__ == "__main__":

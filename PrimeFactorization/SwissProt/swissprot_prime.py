@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import Element
 import time
 import os
 import psutil
@@ -57,16 +58,26 @@ class XmlLabeler:
         return process.memory_info().rss // 1024  # KB
     
 class PrimeLabeler:
-    def label_tree(self, element, pLabel, d):
+    def label_tree(self, element, pLabel):
     # element.set("label", str(pLabel)) 
         element.Label = pLabel.copy()  
         for j in range(1, len(element.Children)+1):
             pout = pLabel.copy()
             pout.append(j)
-            self.label_tree(element.Children[j-1], pout, d + 1)
+            self.label_tree(element.Children[j-1], pout)
         
     def InsertNode(self, parent, newNode):
         parent.AddChild(newNode)
+
+    def InsertLabeledNode(self, parent, newNode):
+        parent.AddChild(newNode)
+        newNode.Label = parent.Label.copy()
+        newNode.Label.append(len(parent.Children))
+        pLabel = newNode.Label
+        for j in range(1, len(newNode.Children)+1):
+            pout = pLabel.copy()
+            pout.append(j)
+            self.label_tree(newNode.Children[j-1], pout)
 
 def main():
     input_file_path = "SwissProt.xml"
@@ -82,7 +93,7 @@ def main():
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
 
-    prime_labeler.label_tree(root_node, [], 0)
+    prime_labeler.label_tree(root_node, [])
 
     final_memory = XmlLabeler.GetMemoryUsage()
     elapsed_time = (time.time() - start_time) * 1000  # ms
@@ -90,87 +101,129 @@ def main():
     print(f"Initial labeling time: {elapsed_time:.2f} ms")
     print(f"Memory Used During Labeling: {final_memory - initial_memory} KB")
 
-    # Create new element to insert
-    new_element = ET.Element("dataset")
-    new_element.set("subject", "astronomy")
-    new_element.set("xmlns:xlink", "http://www.w3.org/XML/XLink/0.9")
+    # Root Entry element with attributes
+    entry = Element("Entry", {
+        "id": "200K_HUMAN",
+        "class": "STANDARD",
+        "mtype": "PRT",
+        "seqlen": "1200"
+    })
+
+    # Simple children
+    ac = Element("AC")
+    ac.text = "P99999"
+    entry.append(ac)
+
+    # Mod elements
+    mod1 = Element("Mod", {"date": "10-JAN-2024", "Rel": "55", "type": "Created"})
+    mod2 = Element("Mod", {"date": "10-JAN-2024", "Rel": "55", "type": "Last sequence update"})
+    mod3 = Element("Mod", {"date": "20-FEB-2024", "Rel": "56", "type": "Last annotation update"})
+    entry.extend([mod1, mod2, mod3])
+
+    # Description and species
+    descr = Element("Descr")
+    descr.text = "200 KDA SIGNALING RECEPTOR PROTEIN"
+    entry.append(descr)
+
+    species = Element("Species")
+    species.text = "Homo sapiens (Human)"
+    entry.append(species)
+
+    # Organism lineage
+    orgs = [
+        "Eukaryota", "Metazoa", "Chordata", "Craniata",
+        "Vertebrata", "Mammalia", "Primates", "Hominidae", "Homo"
+    ]
+    for org_text in orgs:
+        org = Element("Org")
+        org.text = org_text
+        entry.append(org)
+
+    # Ref 1
+    ref1 = Element("Ref", {"num": "1", "pos": "SEQUENCE FROM N.A"})
+
+    comment = Element("Comment")
+    comment.text = "STRAIN=REFERENCE"
+    ref1.append(comment)
+
+    db = Element("DB")
+    db.text = "PUBMED"
+    ref1.append(db)
+
+    medline = Element("MedlineID")
+    medline.text = "98765432"
+    ref1.append(medline)
+
+    for author_name in ["Smith J.", "Doe A.", "Brown T."]:
+        author = Element("Author")
+        author.text = author_name
+        ref1.append(author)
+
+    cite1 = Element("Cite")
+    cite1.text = "J. Biol. Chem. 299:1234-1245(2024)"
+    ref1.append(cite1)
+
+    entry.append(ref1)
+
+    # Ref 2
+    ref2 = Element("Ref", {"num": "2", "pos": "ERRATUM"})
+
+    author = Element("Author")
+    author.text = "Smith J."
+    ref2.append(author)
+
+    cite2 = Element("Cite")
+    cite2.text = "J. Biol. Chem. 300:2345-2346(2024)"
+    ref2.append(cite2)
+
+    entry.append(ref2)
+
+    # EMBL, INTERPRO, PFAM
+    entry.append(Element("EMBL", {"prim_id": "X12345", "sec_id": "CAA12345"}))
+    entry.append(Element("INTERPRO", {"prim_id": "IPR001234", "sec_id": "-"}))
+    entry.append(Element("INTERPRO", {"prim_id": "IPR005678", "sec_id": "-"}))
+    entry.append(Element("PFAM", {"prim_id": "PF00123", "sec_id": "SIGNAL", "status": "1"}))
+    entry.append(Element("PFAM", {"prim_id": "PF00456", "sec_id": "DOMAIN", "status": "1"}))
+
+    # Keywords
+    for kw in ["Signaling", "Receptor", "Transmembrane"]:
+        keyword = Element("Keyword")
+        keyword.text = kw
+        entry.append(keyword)
+
+    # Features section
+    features = Element("Features")
+
+    domain1 = Element("DOMAIN", {"from": "60", "to": "120"})
+    d1_descr = Element("Descr")
+    d1_descr.text = "TRANSMEMBRANE DOMAIN"
+    domain1.append(d1_descr)
+
+    domain2 = Element("DOMAIN", {"from": "300", "to": "450"})
+    d2_descr = Element("Descr")
+    d2_descr.text = "SIGNAL TRANSDUCTION DOMAIN"
+    domain2.append(d2_descr)
+
+    domain3 = Element("DOMAIN", {"from": "700", "to": "900"})
+    d3_descr = Element("Descr")
+    d3_descr.text = "ATP BINDING DOMAIN"
+    domain3.append(d3_descr)
+
+    binding = Element("BINDING", {"from": "850", "to": "860"})
+    b_descr = Element("Descr")
+    b_descr.text = "GTP BINDING SITE"
+    binding.append(b_descr)
+
+    features.extend([domain1, domain2, domain3, binding])
+    entry.append(features)
+    new_node = XmlLabeler.BuildTree(entry)
     
-    title = ET.SubElement(new_element, "title")
-    title.text = "Proper Motions of Stars in the Zone Catalogue -40 to -52 degrees of 20843 Stars for 1900"
-    
-    altname1 = ET.SubElement(new_element, "altname")
-    altname1.set("type", "ADC")
-    altname1.text = "1005"
-    
-    altname2 = ET.SubElement(new_element, "altname")
-    altname2.set("type", "CDS")
-    altname2.text = "I/5"
-    
-    altname3 = ET.SubElement(new_element, "altname")
-    altname3.set("type", "brief")
-    altname3.text = "Proper Motions in Cape Zone Catalogue -40/-52"
-    
-    reference = ET.SubElement(new_element, "reference")
-    source = ET.SubElement(reference, "source")
-    other = ET.SubElement(source, "other")
-    
-    other_title = ET.SubElement(other, "title")
-    other_title.text = "Proper Motions of Stars in the Zone Catalogue"
-    
-    author1 = ET.SubElement(other, "author")
-    initial1 = ET.SubElement(author1, "initial")
-    initial1.text = "J"
-    lastName1 = ET.SubElement(author1, "lastName")
-    lastName1.text = "Spencer"
-    
-    author2 = ET.SubElement(other, "author")
-    initial2 = ET.SubElement(author2, "initial")
-    initial2.text = "J"
-    lastName2 = ET.SubElement(author2, "lastName")
-    lastName2.text = "Jackson"
-    
-    name = ET.SubElement(other, "name")
-    name.text = "His Majesty's Stationery Office, London"
-    
-    publisher = ET.SubElement(other, "publisher")
-    publisher.text = "???"
-    
-    city = ET.SubElement(other, "city")
-    city.text = "???"
-    
-    date = ET.SubElement(other, "date")
-    year = ET.SubElement(date, "year")
-    year.text = "1936"
-    
-    keywords = ET.SubElement(new_element, "keywords")
-    keywords.set("parentListURL", "http://messier.gsfc.nasa.gov/xml/keywordlists/adc_keywords.html")
-    
-    keyword1 = ET.SubElement(keywords, "keyword")
-    keyword1.set("xlink:href", "Positional_data.html")
-    keyword1.text = "Positional data"
-    
-    keyword2 = ET.SubElement(keywords, "keyword")
-    keyword2.set("xlink:href", "Proper_motions.html")
-    keyword2.text = "Proper motions"
-    
-    descriptions = ET.SubElement(new_element, "descriptions")
-    description = ET.SubElement(descriptions, "description")
-    para = ET.SubElement(description, "para")
-    para.text = "This catalog, listing the proper motions of 20,843 stars from the Cape Astrographic Zones..."
-    ET.SubElement(descriptions, "details")
-    
-    identifier = ET.SubElement(new_element, "identifier")
-    identifier.text = "I_5.xml"
-    
-    # Insert the new node
-    new_node = XmlNode("dataset", new_element)
-    prime_labeler.InsertNode(root_node, new_node)
 
     # Relabel the tree after insertion
     start_time = time.time()
     initial_memory = XmlLabeler.GetMemoryUsage()
 
-    prime_labeler.label_tree(root_node, [], 0)
+    prime_labeler.InsertLabeledNode(root_node, new_node)
 
     final_memory = XmlLabeler.GetMemoryUsage()
     elapsed_time = (time.time() - start_time) * 1000  # ms
@@ -178,9 +231,9 @@ def main():
     print(f"Time taken to label after insertion: {elapsed_time:.2f} ms")
     print(f"Memory Used During Relabeling After Insertion: {final_memory - initial_memory} KB")
 
-    # Write the XML file
-    tree.write(output_file_path, encoding='utf-8', xml_declaration=True)
-    print(f"Labeled XML has been saved to {output_file_path}")
+    # Export the labeled XML
+    # XmlLabeler.ExportLabeledXml(root_node, output_file_path)
+    # print(f"Labeled XML has been saved to {output_file_path}")
 
 if __name__ == "__main__":
     main()
